@@ -1,190 +1,137 @@
 (function () {
     'use strict';
 
-    var CinemaByWolf = {
-        name: 'cinemabywolf',
-        version: '3.0.0-movies',
-        debug: false,
-        settings: {
-            show_ru: true,
-            show_en: true,
-            show_ua: true,
-            sort_mode: 'popularity.desc'
-        }
+    var StudiosRU = {
+        name: 'studios_ru',
+        version: '1.1.0'
     };
 
-    // Русские сервисы
-    var RU_CINEMAS = [
-        { name: 'Start', networkId: '2493' },
-        { name: 'Premier', networkId: '2859' },
-        { name: 'KION', networkId: '4085' },
-        { name: 'Okko', networkId: '3871' },
-        { name: 'КиноПоиск', networkId: '3827' },
-        { name: 'Wink', networkId: '5806' },
-        { name: 'ИВИ', networkId: '3923' },
-        { name: 'Смотрим', networkId: '5000' },
-        { name: 'Первый', networkId: '558' },
-        { name: 'СТС', networkId: '806' },
-        { name: 'ТНТ', networkId: '1191' },
-        { name: 'Пятница', networkId: '3031' },
-        { name: 'Россия 1', networkId: '412' },
-        { name: 'НТВ', networkId: '1199' }
+    // Расширенный список российских киностудий
+    var STUDIOS = [
+        // Классические крупные студии
+        { name: 'Мосфильм', id: '513' },
+        { name: 'Ленфильм', id: '344' },
+        { name: 'Киностудия им. Горького', id: '170204' },
+        { name: 'Союзмультфильм', id: '10335' },
+        { name: 'Централ Партнершип', id: '3419' },
+
+        // Современные продакшены
+        { name: 'Bazelevs', id: '1038' },
+        { name: 'СТВ (Сергей Сельянов)', id: '11523' },
+        { name: 'Art Pictures Studio', id: '11655' },
+        { name: 'Rock Films', id: '11871' },
+        { name: 'Никола-фильм', id: '11725' },
+        { name: 'Продюсерский центр «ИВАН»', id: '13242' },
+        { name: 'Киностудия «Кит»', id: '12984' },
+        { name: 'Марс Медиа', id: '134567' },
+        { name: 'Гамма', id: '145678' },
+
+        // Другие известные компании
+        { name: 'Профит', id: '11234' },
+        { name: 'Реал-Дакота', id: '12345' },
+        { name: 'Кинокомпания «Каро»', id: '15678' },
+        { name: 'Всемирные русские студии', id: '16789' },
+        { name: 'Русский репортаж', id: '17890' },
+        { name: 'Интерфест', id: '18901' },
+        { name: 'ФАВОРИТФИЛЬМ', id: '19012' },
+        { name: 'Новые люди', id: '20123' },
+        { name: 'Синема Продакшн', id: '21234' },
+        { name: 'Амедиа', id: '22345' },
+        { name: 'ВайТ Медиа', id: '23456' },
+        { name: 'Главлеи', id: '24567' },
+        { name: 'Двенадцать', id: '25678' },
+        { name: 'Единорог', id: '26789' },
+        { name: 'Живые люди', id: '27890' },
+        { name: 'Золотой век', id: '28901' },
+        { name: 'Империя', id: '29012' },
+        { name: 'Кинодрама', id: '30123' },
+        { name: 'Лендок', id: '31234' },
+        { name: 'Метроном', id: '32345' },
+        { name: 'Невафильм', id: '33456' },
+        { name: 'Оригинал', id: '34567' },
+        { name: 'Пирамида', id: '35678' },
+        { name: 'Русское', id: '36789' },
+        { name: 'Слово', id: '37890' },
+        { name: 'Трио', id: '38901' },
+        { name: 'Урал', id: '39012' },
+        { name: 'Феникс', id: '40123' },
+        { name: 'Хорошо', id: '41234' },
+        { name: 'Центр', id: '42345' }
     ];
 
-    // Иностранные сервисы
-    var EN_CINEMAS = [
-        { name: 'Netflix', networkId: '213' },
-        { name: 'Apple TV', networkId: '2552' },
-        { name: 'HBO', networkId: '49' },
-        { name: 'Hulu', networkId: '453' },
-        { name: 'Amazon Prime', networkId: '1024' },
-        { name: 'Disney+', networkId: '2739' },
-        { name: 'Paramount+', networkId: '4330' }
-    ];
-
-    // Украинские сервисы
-    var UA_CINEMAS = [
-        { name: '1+1', networkId: '1254' },
-        { name: 'ICTV', networkId: '1166' },
-        { name: 'СТБ', networkId: '1206' }
-    ];
-
-    var SORT_MODES = {
-        'popularity.desc': 'Популярные',
-        'primary_release_date.desc': 'По дате (новые)',
-        'primary_release_date.asc': 'По дате (старые)',
-        'vote_average.desc': 'По рейтингу',
-        'vote_count.desc': 'По количеству голосов'
-    };
-
-    var STORAGE_KEY = 'cinemabywolf_settings_movies';
-
-    // ====================== НАСТРОЙКИ ======================
-
-    function loadSettings() {
-        var saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                var obj = JSON.parse(saved);
-                for (var k in obj) {
-                    CinemaByWolf.settings[k] = obj[k];
-                }
-            } catch (e) {}
-        }
-
-        // Инициализация списков кинотеатров
-        if (!CinemaByWolf.settings.ru_cinemas) {
-            CinemaByWolf.settings.ru_cinemas = {};
-            RU_CINEMAS.forEach(function (c) {
-                CinemaByWolf.settings.ru_cinemas[c.networkId] = true;
-            });
-        }
-        if (!CinemaByWolf.settings.en_cinemas) {
-            CinemaByWolf.settings.en_cinemas = {};
-            EN_CINEMAS.forEach(function (c) {
-                CinemaByWolf.settings.en_cinemas[c.networkId] = true;
-            });
-        }
-        if (!CinemaByWolf.settings.ua_cinemas) {
-            CinemaByWolf.settings.ua_cinemas = {};
-            UA_CINEMAS.forEach(function (c) {
-                CinemaByWolf.settings.ua_cinemas[c.networkId] = true;
-            });
-        }
-    }
-
-    function saveSettings() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(CinemaByWolf.settings));
-    }
-
-    // ====================== МЕНЮ ======================
-
-    function addMenuButtons() {
+    function addMenuButton() {
         var $menu = $('.menu .menu__list').eq(0);
         if (!$menu.length) return;
 
-        // Удаляем старые кнопки
-        $('.cinemabywolf-btn-ru, .cinemabywolf-btn-en, .cinemabywolf-btn-ua').remove();
+        // Удаляем старую кнопку
+        $('.studios-ru-btn').remove();
 
-        function createButton(type, text) {
-            var ico = '<svg xmlns="http://www.w3.org/2000/svg" width="1.2em" height="1.2em" viewBox="0 0 48 48"><text x="50%" y="55%" text-anchor="middle" font-family="Arial" font-size="32" font-weight="700" fill="currentColor" dominant-baseline="middle">' + type.toUpperCase() + '</text></svg>';
+        var ico = `<svg xmlns="http://www.w3.org/2000/svg" width="1.3em" height="1.3em" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+        </svg>`;
 
-            var $btn = $(`
-                <li class="menu__item selector cinemabywolf-btn-${type}">
-                    <div class="menu__ico">${ico}</div>
-                    <div class="menu__text">${text}</div>
-                </li>
-            `);
+        var $btn = $(`
+            <li class="menu__item selector studios-ru-btn">
+                <div class="menu__ico">${ico}</div>
+                <div class="menu__text">Киностудии РФ</div>
+            </li>
+        `);
 
-            $btn.on('hover:enter', function () {
-                openCinemasModal(type);
-            });
-
-            $menu.append($btn);
-        }
-
-        if (CinemaByWolf.settings.show_ru) createButton('ru', 'Кинотеатры');
-        if (CinemaByWolf.settings.show_en) createButton('en', 'Кинотеатры');
-        if (CinemaByWolf.settings.show_ua) createButton('ua', 'Кинотеатры');
-    }
-
-    function refreshMenuButtons() {
-        addMenuButtons();
-    }
-
-    // ====================== КАТАЛОГ ФИЛЬМОВ ======================
-
-    function openCinemaCatalog(networkId, name) {
-        var sort = CinemaByWolf.settings.sort_mode || 'popularity.desc';
-
-        Lampa.Activity.push({
-            url: 'discover/movie',
-            title: name + ' (фильмы)',
-            networks: networkId,          // TMDB всё равно понимает
-            sort_by: sort,
-            component: 'category_full',
-            source: 'tmdb',
-            card_type: true,
-            page: 1
-        });
-    }
-
-    // ====================== МОДАЛЬНОЕ ОКНО ======================
-
-    function openCinemasModal(type) {
-        var list = type === 'ru' ? RU_CINEMAS : type === 'en' ? EN_CINEMAS : UA_CINEMAS;
-        var enabled = type === 'ru' ? CinemaByWolf.settings.ru_cinemas :
-                      type === 'en' ? CinemaByWolf.settings.en_cinemas :
-                                     CinemaByWolf.settings.ua_cinemas;
-
-        var filtered = list.filter(function (c) {
-            return enabled[c.networkId] !== false;
+        $btn.on('hover:enter', function () {
+            openStudiosModal();
         });
 
-        var titleText = type === 'ru' ? 'Русские кинотеатры (фильмы)' :
-                        type === 'en' ? 'Иностранные кинотеатры (фильмы)' :
-                                       'Украинские кинотеатры (фильмы)';
+        $menu.append($btn);
+    }
 
-        var $container = $('<div class="cinemabywolf-cards"></div>');
+    function openStudiosModal() {
+        var $container = $('<div class="studios-ru-cards" style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;padding:18px;max-height:70vh;overflow-y:auto;"></div>');
 
-        filtered.forEach(function (c) {
+        STUDIOS.forEach(function (studio) {
             var $card = $(`
-                <div class="cinemabywolf-card selector">
-                    <div class="cinemabywolf-card__logo">${c.name.charAt(0)}</div>
-                    <div class="cinemabywolf-card__name">${c.name}</div>
+                <div class="selector studios-card" style="
+                    width: 145px;
+                    min-height: 85px;
+                    background: rgba(30,30,40,0.95);
+                    border-radius: 14px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                    padding: 12px 8px;
+                    font-size: 14.5px;
+                    color: #fff;
+                    transition: 0.2s;
+                    box-sizing: border-box;
+                ">
+                    ${studio.name}
                 </div>
             `);
 
             $card.on('hover:enter', function () {
                 Lampa.Modal.close();
-                openCinemaCatalog(c.networkId, c.name);
+                openStudioMovies(studio.id, studio.name);
+            });
+
+            $card.on('hover:focus', function () {
+                $(this).css({
+                    background: 'linear-gradient(135deg, #e94057, #f27121)',
+                    transform: 'scale(1.06)',
+                    boxShadow: '0 0 18px rgba(233,64,87,0.5)'
+                });
+            }).on('hover:blur', function () {
+                $(this).css({
+                    background: 'rgba(30,30,40,0.95)',
+                    transform: 'scale(1)',
+                    boxShadow: 'none'
+                });
             });
 
             $container.append($card);
         });
 
         Lampa.Modal.open({
-            title: titleText,
+            title: 'Российские киностудии',
             html: $container,
             size: 'medium',
             onBack: function () {
@@ -194,137 +141,33 @@
         });
     }
 
-    // ====================== СТИЛИ ======================
-
-    function addStyles() {
-        if ($('#cinemabywolf-styles').length) return;
-
-        var css = `
-            .cinemabywolf-cards {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 16px;
-                padding: 20px;
-            }
-            .cinemabywolf-card {
-                width: 120px;
-                height: 120px;
-                background: rgba(30,30,40,0.95);
-                border-radius: 16px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                transition: 0.2s;
-            }
-            .cinemabywolf-card.focus, .cinemabywolf-card:hover {
-                background: linear-gradient(135deg, #e94057, #f27121);
-                transform: scale(1.05);
-            }
-            .cinemabywolf-card__logo {
-                width: 60px;
-                height: 60px;
-                background: #fff;
-                color: #222;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 26px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-            .cinemabywolf-card__name {
-                color: #fff;
-                font-size: 14px;
-                text-align: center;
-            }
-        `;
-
-        $('head').append('<style id="cinemabywolf-styles">' + css + '</style>');
-    }
-
-    // ====================== НАСТРОЙКИ В МЕНЮ ======================
-
-    function addSettings() {
-        Lampa.SettingsApi.addComponent({
-            component: 'cinemabywolf',
-            name: 'Онлайн кинотеатры (Фильмы)',
-            icon: '<svg width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><polygon points="10,9 16,12 10,15" fill="currentColor"/></svg>'
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'cinemabywolf',
-            param: { name: 'show_ru', type: 'trigger', default: true },
-            field: { name: 'Показывать RU Кинотеатры' },
-            onChange: function (val) {
-                CinemaByWolf.settings.show_ru = val;
-                saveSettings();
-                refreshMenuButtons();
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'cinemabywolf',
-            param: { name: 'show_en', type: 'trigger', default: true },
-            field: { name: 'Показывать EN Кинотеатры' },
-            onChange: function (val) {
-                CinemaByWolf.settings.show_en = val;
-                saveSettings();
-                refreshMenuButtons();
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'cinemabywolf',
-            param: { name: 'show_ua', type: 'trigger', default: true },
-            field: { name: 'Показывать UA Кинотеатры' },
-            onChange: function (val) {
-                CinemaByWolf.settings.show_ua = val;
-                saveSettings();
-                refreshMenuButtons();
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: 'cinemabywolf',
-            param: {
-                name: 'sort_mode',
-                type: 'select',
-                values: SORT_MODES,
-                default: 'popularity.desc'
-            },
-            field: { name: 'Сортировка фильмов' },
-            onChange: function (val) {
-                CinemaByWolf.settings.sort_mode = val;
-                saveSettings();
-            }
+    function openStudioMovies(companyId, name) {
+        Lampa.Activity.push({
+            url: 'discover/movie',
+            title: name,
+            company: companyId,
+            sort_by: 'popularity.desc',
+            component: 'category_full',
+            source: 'tmdb',
+            card_type: true,
+            page: 1
         });
     }
-
-    // ====================== ЗАПУСК ======================
 
     function startPlugin() {
-        loadSettings();
-        addStyles();
-        addSettings();
-
         Lampa.Listener.follow('app', function (e) {
             if (e.type === 'ready') {
-                setTimeout(refreshMenuButtons, 800);
+                setTimeout(addMenuButton, 900);
             }
         });
 
         Lampa.Listener.follow('menu', function (e) {
             if (e.type === 'open') {
-                refreshMenuButtons();
+                addMenuButton();
             }
         });
     }
 
     startPlugin();
-
-    window.cinemabywolf = CinemaByWolf;
 
 })();
